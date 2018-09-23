@@ -152,3 +152,10 @@ ggplot(rankImportance, aes(x = reorder(Variables, Importance),
   labs(x = 'Variables') +
   coord_flip() +
   theme_few()
+
+#Prediction
+prediction <- predict(rf_model, test)
+
+solution <- data.frame(PassengerID = test$PassengerId, Survived = prediction)
+
+write.csv(solution, file = 'rf_mod_Solution.csv', row.names = F)
