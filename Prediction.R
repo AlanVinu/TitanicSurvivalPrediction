@@ -101,3 +101,54 @@ hist(full$Age, freq = F, main = "Age: Original Data", col = 'darkgreen', ylim = 
 hist(mice_output$Age, freq = F, main = "Age: MICE Data", col = 'darkblue', ylim = c(0,0.04))
 
 full$Age <- mice_output$Age
+
+#Relationship between age and survival
+ggplot(full[1:891,], aes(Age, fill = factor(Survived))) +
+  geom_histogram() +
+  theme_few()
+
+#Lets divide the graph into males and females
+ggplot(full[1:891,], aes(Age, fill = factor(Survived))) +
+  geom_histogram() +
+  theme_few() + 
+  facet_grid(.~Sex) + 
+  scale_fill_discrete(name = "Survival", breaks = c(0,1), 
+                      labels = c("Didn't Survive", "Survived")) + 
+  ggtitle("RMS Titanic") + 
+  labs(x= "Age", y = "Count")
+
+md.pattern(full)
+
+#Prediction
+train <- full[1:891, ]
+test <- full[892:1309, ]
+
+#Building the model using randomForest
+set.seed(340)
+
+rf_model <- 
+  randomForest(factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare +
+                 Embarked + Title + FsizeD, data = train)
+
+#Checking the error rate
+plot(rf_model, ylim = c(0,0.36))
+legend('topright', colnames(rf_model$err.rate), col = 1:3, fill = 1:3)
+
+#to find the variable importance
+importance <- importance(rf_model)
+varImportance <- 
+  data.frame(Variables = row.names(importance),
+             Importance = round(importance[,'MeanDecreaseGini'],2))
+
+#rank variable based on Importance
+rankImportance <- varImportance %>%
+  mutate(Rank = paste0('#',dense_rank(desc(Importance))))
+
+ggplot(rankImportance, aes(x = reorder(Variables, Importance),
+                           y = Importance, fill = Importance)) +
+  geom_bar(stat = 'identity') +
+  geom_text(aes(x = Variables, y = 0.5, label = Rank),
+            hjust = 0, vjust = 0.55, size = 4, colour = 'red') +
+  labs(x = 'Variables') +
+  coord_flip() +
+  theme_few()
