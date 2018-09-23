@@ -57,14 +57,15 @@ full$Deck <- factor(sapply(full$Cabin, function(x) strsplit(x,NULL)[[1]][1]))
 embark_fare <- full %>%
   filter(PassengerId != 62 & PassengerId != 830)
 
-ggplot(embark_fare, aes(x = Embarked, y = Fare, fill = factor(Pclass))) +
-  geom_boxplot() + 
-  geom_hline(aes(yintercept = 80), colour = 'red', linetype = 'dashed', lwd = 2) +
-  scale_y_continuous(labels = dollar_format()) +
-  theme_few()
+#I'm going to use mode to impute the missing Embarked values
+mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+mode(full$Embarked)
 
-#Passengers[62 & 830] must've embarked from Charbourg('C')
-full$Embarked[c(62,830)] <- 'C'
+#Passengers[62 & 830] must've embarked from Southampton('S')
+full$Embarked[c(62,830)] <- 'S'
 
 #Passenger 1044 has NA as Fare value so visualising based on the other info given
 ggplot(full[full$Pclass == '3' & full$Embarked == 'S', ], aes(x = Fare)) +
@@ -84,7 +85,7 @@ factor_vars <-
   c('PassengerId', 'Pclass', 'Sex', 'Embarked', 'Title', 'Surname', 'Family','FsizeD')
 full[factor_vars] <- lapply(full[factor_vars], function(x) as.factor(x))
 
-set.seed(148)
+set.seed(142)
 
 #mice imputation excluding some variables which are not useful here
 mice_mod <- 
@@ -124,7 +125,7 @@ train <- full[1:891, ]
 test <- full[892:1309, ]
 
 #Building the model using randomForest
-set.seed(340)
+set.seed(348)
 
 rf_model <- 
   randomForest(factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare +
